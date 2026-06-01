@@ -243,24 +243,32 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
             </div>
           </div>
 
-          {/* Social Platforms links */}
-          {socialLinks.length > 0 && (
-            <div className="flex gap-2.5 shrink-0 self-center md:self-end pb-1">
-              {socialLinks.map((link) => (
-                <a
-                  key={link.platform}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-950 hover:bg-cyan-600 hover:text-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-850 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all active:scale-[0.95]"
-                  title={link.platform}
-                  id={`social-${link.platform.toLowerCase()}`}
-                >
-                  {getSocialIcon(link.platform)}
-                </a>
-              ))}
-            </div>
-          )}
+          {/* Social Platforms links & Open to Work */}
+          <div className="flex flex-col items-center md:items-end gap-2.5 shrink-0 self-center md:self-end pb-1">
+            {/* Animated Blue "Open to Work" Indicator */}
+            <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full shadow-sm animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping"></span>
+              Open to Work
+            </span>
+
+            {socialLinks.length > 0 && (
+              <div className="flex gap-2.5">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.platform}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-950 hover:bg-cyan-600 hover:text-white text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-850 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all active:scale-[0.95]"
+                    title={link.platform}
+                    id={`social-${link.platform.toLowerCase()}`}
+                  >
+                    {getSocialIcon(link.platform)}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Dynamic Detail grid */}
