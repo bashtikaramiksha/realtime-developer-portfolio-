@@ -1095,22 +1095,32 @@ export default function DeveloperCompare() {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex gap-2 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800/80 print:hidden">
+                      <div className="flex gap-1.5 mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800/80 print:hidden">
                         <button
                           onClick={() => setSelectedDossierDev(dev)}
                           className="flex-1 flex items-center justify-center gap-1 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-350 hover:dark:bg-zinc-800 py-1.5 rounded-lg text-[10px] font-extrabold cursor-pointer"
+                          title="View Dossier"
                         >
-                          <Eye className="h-3 w-3" /> View Dossier
+                          <Eye className="h-3 w-3 shrink-0" /> Dossier
                         </button>
+                        <a
+                          href={`/portfolio/${dev.username}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-1.5 rounded-lg text-[10px] font-extrabold shadow-sm hover:shadow-md transition-all cursor-pointer text-center"
+                          title="View Portfolio"
+                        >
+                          <Briefcase className="h-3 w-3 shrink-0" /> Portfolio
+                        </a>
                         <button
                           onClick={() => handleToggleShortlist(idx)}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center gap-1 py-1.5 px-1.5 rounded-lg text-[10px] font-extrabold transition-all cursor-pointer ${
                             dev.isShortlisted
                               ? 'bg-emerald-600 text-white shadow-md'
-                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-855 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:bg-zinc-800'
+                              : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-855 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-350 hover:text-zinc-950 dark:hover:bg-zinc-800'
                           }`}
                         >
-                          <Check className="h-3 w-3" />
+                          <Check className="h-3 w-3 shrink-0" />
                           {dev.isShortlisted ? 'Shortlisted' : 'Shortlist'}
                         </button>
                       </div>
@@ -1323,6 +1333,15 @@ export default function DeveloperCompare() {
                           >
                             <Eye className="h-4 w-4" />
                           </button>
+                          <a
+                            href={`/portfolio/${dev.username}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white p-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center shadow-md hover:shadow-lg"
+                            title="View Portfolio"
+                          >
+                            <Briefcase className="h-4 w-4" />
+                          </a>
                           <button
                             onClick={() => handleToggleShortlist(idx)}
                             className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -1360,9 +1379,21 @@ export default function DeveloperCompare() {
                           (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${dev.username}`;
                         }}
                       />
-                      <div>
-                        <h4 className="text-xs font-bold text-zinc-900 dark:text-white">{dev.name}</h4>
-                        <span className="text-[9px] text-zinc-550 font-semibold block">@{dev.username}</span>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-zinc-900 dark:text-white truncate">{dev.name}</h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[9px] text-zinc-555 font-semibold">@{dev.username}</span>
+                          <span className="text-zinc-350 dark:text-zinc-700">&bull;</span>
+                          <a 
+                            href={`/portfolio/${dev.username}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-0.5 text-[9px] text-cyan-600 dark:text-cyan-400 hover:underline font-bold"
+                          >
+                            <Briefcase className="h-3 w-3" />
+                            Portfolio
+                          </a>
+                        </div>
                       </div>
                     </div>
 
@@ -1673,7 +1704,18 @@ export default function DeveloperCompare() {
                           />
                           <div>
                             <span className="font-bold text-zinc-900 dark:text-white block truncate max-w-[120px]">{dev.name}</span>
-                            <span className="text-[9px] text-zinc-550">@{dev.username}</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[9px] text-zinc-550">@{dev.username}</span>
+                              <span className="text-zinc-300 dark:text-zinc-700">&bull;</span>
+                              <a 
+                                href={`/portfolio/${dev.username}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[9px] text-cyan-600 dark:text-cyan-400 hover:underline font-bold"
+                              >
+                                Portfolio
+                              </a>
+                            </div>
                           </div>
                         </td>
                         <td className="py-4 px-4 text-center text-zinc-900 dark:text-white font-extrabold text-sm md:text-base">
@@ -1826,9 +1868,20 @@ export default function DeveloperCompare() {
                         (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${dev.username}`;
                       }}
                     />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h4 className="text-xs font-bold text-zinc-900 dark:text-white truncate max-w-[120px]">{dev.name}</h4>
-                      <span className="text-[9px] text-zinc-500 block mt-0.5">{dev.totalContributions} commits (30d)</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[9px] text-zinc-500 font-semibold">{dev.totalContributions} commits (30d)</span>
+                        <span className="text-zinc-350 dark:text-zinc-700">&bull;</span>
+                        <a 
+                          href={`/portfolio/${dev.username}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[9px] text-cyan-600 dark:text-cyan-400 hover:underline font-bold"
+                        >
+                          Portfolio
+                        </a>
+                      </div>
                     </div>
                   </div>
 
