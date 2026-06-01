@@ -503,20 +503,7 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
               </div>
             )}
 
-            {/* Professional Summary */}
-            <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/40 p-6 backdrop-blur-sm text-center shadow-sm dark:shadow-none">
-              <Briefcase className="h-8 w-8 text-cyan-550 dark:text-cyan-400 mx-auto mb-3" />
-              <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">Open for Opportunities</h4>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                Interested in consulting, full-time contracts, or engineering collaborations. Get in touch directly via email.
-              </p>
-              <a
-                href={`mailto:${profile.email}`}
-                className="mt-4 block w-full rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-900 text-xs font-bold text-zinc-700 dark:text-zinc-300 py-2.5 border border-zinc-200 dark:border-zinc-850 transition-all active:scale-[0.98]"
-              >
-                Contact Developer
-              </a>
-            </div>
+
 
           </aside>
 
