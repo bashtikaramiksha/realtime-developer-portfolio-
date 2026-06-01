@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +14,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -24,3 +24,232 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes slide-in {
+  from {
+    transform: translateY(1rem) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================
+   Premium Light Theme Adapters for Widgets
+   ========================================== */
+
+/* Active only when the html element does NOT have the .dark class */
+html:not(.dark) main {
+  --background: #f9fafb; /* zinc-50 */
+  --foreground: #09090b; /* zinc-950 */
+}
+
+/* Background overrides for inner elements */
+html:not(.dark) main .bg-zinc-950,
+html:not(.dark) main .bg-zinc-950\/20,
+html:not(.dark) main .bg-zinc-950\/40,
+html:not(.dark) main .bg-zinc-950\/50,
+html:not(.dark) main .bg-zinc-950\/60,
+html:not(.dark) main .bg-zinc-950\/80,
+html:not(.dark) main .bg-zinc-950\/60,
+html:not(.dark) main .bg-zinc-950\/30 {
+  background-color: #f4f4f5 !important; /* zinc-100 */
+}
+
+html:not(.dark) main .bg-zinc-900,
+html:not(.dark) main .bg-zinc-900\/20,
+html:not(.dark) main .bg-zinc-900\/30,
+html:not(.dark) main .bg-zinc-900\/40,
+html:not(.dark) main .bg-zinc-900\/50,
+html:not(.dark) main .bg-zinc-900\/60,
+html:not(.dark) main .bg-zinc-900\/80,
+html:not(.dark) main .bg-zinc-850 {
+  background-color: #ffffff !important; /* white card base */
+}
+
+/* Form inputs, select boxes, and textareas */
+html:not(.dark) main input,
+html:not(.dark) main select,
+html:not(.dark) main textarea {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+  border-color: #e4e4e7 !important; /* zinc-200 */
+}
+
+html:not(.dark) main input::placeholder,
+html:not(.dark) main textarea::placeholder {
+  color: #a1a1aa !important; /* zinc-400 */
+}
+
+/* Border overrides */
+html:not(.dark) main .border-zinc-800,
+html:not(.dark) main .border-zinc-850,
+html:not(.dark) main .border-zinc-900,
+html:not(.dark) main .border-zinc-800\/80,
+html:not(.dark) main .border-zinc-850\/80,
+html:not(.dark) main .border-zinc-900\/60,
+html:not(.dark) main .border-zinc-700\/50 {
+  border-color: #e4e4e7 !important; /* zinc-200 */
+}
+
+/* Text overrides - keeping buttons and active tags untouched */
+html:not(.dark) main .text-white {
+  color: #09090b !important;
+}
+
+html:not(.dark) main .text-zinc-100,
+html:not(.dark) main .text-zinc-200,
+html:not(.dark) main .text-zinc-300 {
+  color: #18181b !important; /* zinc-900 */
+}
+
+html:not(.dark) main .text-zinc-400 {
+  color: #52525b !important; /* zinc-600 */
+}
+
+html:not(.dark) main .text-zinc-500 {
+  color: #71717a !important; /* zinc-500 */
+}
+
+/* Table element states */
+html:not(.dark) main thead.bg-zinc-950\/80 {
+  background-color: #f4f4f5 !important;
+}
+
+html:not(.dark) main tr.hover\:bg-zinc-950\/30:hover,
+html:not(.dark) main tr.hover\:bg-zinc-950\/20:hover {
+  background-color: #f4f4f5/50 !important;
+}
+
+/* Hover overrides */
+html:not(.dark) main .hover\:bg-zinc-900:hover,
+html:not(.dark) main .hover\:bg-zinc-950:hover,
+html:not(.dark) main .hover\:text-white:hover {
+  background-color: #f4f4f5 !important;
+  color: #09090b !important;
+}
+
+/* Commit heatmaps formatting */
+html:not(.dark) main .bg-emerald-950 {
+  background-color: #d1fae5 !important; /* green-100 */
+  color: #065f46 !important;
+}
+html:not(.dark) main .bg-emerald-800 {
+  background-color: #a7f3d0 !important; /* green-200 */
+  color: #065f46 !important;
+}
+html:not(.dark) main .bg-emerald-500 {
+  background-color: #10b981 !important;
+  color: #ffffff !important;
+}
+html:not(.dark) main .bg-zinc-900 {
+  background-color: #f4f4f5 !important;
+}
+
+/* Exempt portfolio-btn from light mode overrides to keep it dark in light theme */
+html:not(.dark) main .portfolio-btn,
+html:not(.dark) .portfolio-btn {
+  background-color: #18181b !important;
+  color: #ffffff !important;
+  border-color: #18181b !important;
+}
+html:not(.dark) main .portfolio-btn:hover,
+html:not(.dark) .portfolio-btn:hover {
+  background-color: #27272a !important;
+  color: #ffffff !important;
+  border-color: #27272a !important;
+}
+
+/* ==========================================
+   Premium SaaS & Developer Styling Utilities
+   ========================================== */
+
+/* Subtle repeatable grid background utility */
+.bg-grid-pattern {
+  background-size: 50px 50px;
+  background-image: 
+    linear-gradient(to right, rgba(9, 9, 11, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(9, 9, 11, 0.03) 1px, transparent 1px);
+}
+:root.dark .bg-grid-pattern,
+.dark .bg-grid-pattern {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+}
+
+/* Premium ultra-fine paper/matte noise overlay texture */
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.012'/%3E%3C/svg%3E");
+}
+
+/* Float Animations for Tech Stack Capsules */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) translateX(4px) rotate(2deg); }
+}
+
+@keyframes float-medium {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  50% { transform: translateY(-16px) translateX(-6px) rotate(-3deg); }
+}
+
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) translateX(3px) rotate(1deg); }
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 5s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float-fast 4s ease-in-out infinite;
+}
+
+/* Drifting/pulsing background blobs keyframes */
+@keyframes drift-blob-1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.1); }
+}
+
+@keyframes drift-blob-2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50% { transform: translate(-30px, 40px) scale(0.95); }
+}
+
+.animate-drift-1 {
+  animation: drift-blob-1 12s ease-in-out infinite;
+}
+
+.animate-drift-2 {
+  animation: drift-blob-2 15s ease-in-out infinite;
+}
+
+/* Entrance Fade-Up Keyframes */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
