@@ -16,7 +16,7 @@ import ExperienceManager from '@/components/dashboard/ExperienceManager';
 import { 
   User, Mail, Shield, Calendar, Key, Award, FileText, Globe, 
   MapPin, Eye, Link as LinkIcon, Plus, Trash2, Upload, AlertCircle, Loader, CheckCircle, ExternalLink,
-  Phone
+  Phone, Sparkles, GitCompare
 } from 'lucide-react';
 
 interface Skill {
@@ -39,6 +39,13 @@ interface ProfileData {
   resumeUrl: string;
   profileImage: string;
   portfolioSlug: string;
+  atsScore?: number | null;
+  atsAnalysis?: {
+    strengths: string[];
+    missingElements: string[];
+    suggestions: string[];
+    breakdown?: Record<string, number>;
+  } | null;
 }
 
 function DashboardContent() {
@@ -56,14 +63,43 @@ function DashboardContent() {
     resumeUrl: '',
     profileImage: '',
     portfolioSlug: '',
+    atsScore: null,
+    atsAnalysis: null,
   });
+
+  const [recalculatingAts, setRecalculatingAts] = useState(false);
+
+  const handleRecalculateAts = async () => {
+    try {
+      setRecalculatingAts(true);
+      const res = await fetch('/api/profile/recalculate-ats', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        setProfile(prev => ({
+          ...prev,
+          atsScore: data.score,
+          atsAnalysis: data.analysis,
+        }));
+        showToast('ATS Score calculated successfully!', 'success');
+      } else {
+        showToast(data.message || 'Failed to calculate ATS score', 'error');
+      }
+    } catch (err) {
+      showToast('Network error while calculating score', 'error');
+    } finally {
+      setRecalculatingAts(false);
+    }
+  };
 
   const [skills, setSkills] = useState<Skill[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
 
   // Temp local state for adding items
   const [newSkillName, setNewSkillName] = useState('');
-  const [newSkillLevel, setNewSkillLevel] = useState(70);
+  const [newSkillLevel, setNewSkillLevel] = useState(80);
   const [newSocialPlatform, setNewSocialPlatform] = useState('GitHub');
   const [newSocialUrl, setNewSocialUrl] = useState('');
 
@@ -201,6 +237,11 @@ function DashboardContent() {
           ...(type === 'resume' ? { resumeUrl: data.data.resumeUrl } : { profileImage: data.data.profileImage })
         }));
         showToast(`${type === 'resume' ? 'Resume' : 'Avatar'} uploaded successfully!`, 'success');
+        if (type === 'resume') {
+          setTimeout(() => {
+            handleRecalculateAts();
+          }, 500);
+        }
       } else {
         showToast(data.message || 'File upload failed', 'error');
       }
@@ -555,16 +596,31 @@ function DashboardContent() {
                   <div>
                     <label className="block text-xs font-semibold text-zinc-500 uppercase flex justify-between">
                       <span>Proficiency Level</span>
-                      <span className="text-cyan-600 dark:text-cyan-400">{newSkillLevel}%</span>
+                      <span className="text-cyan-600 dark:text-cyan-400 font-mono font-bold">{newSkillLevel}%</span>
                     </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={newSkillLevel}
-                      onChange={(e) => setNewSkillLevel(parseInt(e.target.value))}
-                      className="mt-4 block w-full accent-cyan-500 cursor-pointer"
-                    />
+                    <div className="mt-2 flex gap-1 bg-white dark:bg-zinc-950 p-1 rounded-xl ring-1 ring-inset ring-zinc-200 dark:ring-zinc-800 h-[42px] items-center">
+                      {[
+                        { label: 'Good', value: 50 },
+                        { label: 'Intermediate', value: 80 },
+                        { label: 'Best', value: 100 }
+                      ].map((option) => {
+                        const isActive = newSkillLevel === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setNewSkillLevel(option.value)}
+                            className={`flex-1 h-[34px] rounded-lg text-xs font-semibold transition-all duration-200 ${
+                              isActive
+                                ? 'bg-cyan-600 dark:bg-cyan-500 text-white shadow-sm'
+                                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900/50'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -589,7 +645,9 @@ function DashboardContent() {
                         <div className="flex-1 pr-4">
                           <div className="flex justify-between items-center text-xs font-bold text-zinc-700 dark:text-zinc-200">
                             <span className="text-zinc-700 dark:text-zinc-200">{sk.skillName}</span>
-                            <span className="text-cyan-600 dark:text-cyan-400">{sk.skillLevel}%</span>
+                            <span className="text-cyan-600 dark:text-cyan-400">
+                              {sk.skillLevel <= 50 ? 'Good' : sk.skillLevel <= 80 ? 'Intermediate' : 'Best'} ({sk.skillLevel}%)
+                            </span>
                           </div>
                           <div className="w-full bg-zinc-200 dark:bg-zinc-900 h-1.5 rounded-full overflow-hidden mt-1.5">
                             <div className="bg-cyan-500 h-full rounded-full" style={{ width: `${sk.skillLevel}%` }}></div>
@@ -691,6 +749,110 @@ function DashboardContent() {
                   </p>
                 </div>
 
+              </div>
+
+              {/* ATS Score Card */}
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/40 p-6 space-y-6 shadow-sm dark:shadow-none animate-slide-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-600/10 text-cyan-600 dark:text-cyan-400">
+                      <Sparkles className="h-4.5 w-4.5 animate-pulse" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-800 dark:text-white uppercase tracking-wider">
+                        ATS Resume & Profile Analytics
+                      </h3>
+                      <p className="text-[10px] text-zinc-500 mt-0.5">
+                        Deterministic analysis engine verifying sections and keywords optimization.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={handleRecalculateAts}
+                    disabled={recalculatingAts}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 px-4 py-2 text-xs font-bold text-white transition-all shadow-md active:scale-[0.98]"
+                  >
+                    {recalculatingAts ? (
+                      <>
+                        <Loader className="h-3.5 w-3.5 animate-spin" />
+                        Analyzing Profile...
+                      </>
+                    ) : (
+                      <>
+                        <GitCompare className="h-3.5 w-3.5" />
+                        Recalculate ATS Score
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {profile.atsScore !== undefined && profile.atsScore !== null ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Score display column */}
+                    <div className="flex flex-col items-center justify-center p-6 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-850 text-center space-y-3">
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">ATS score</span>
+                      <div className="relative flex items-center justify-center h-28 w-28 rounded-full border-4 border-zinc-200 dark:border-zinc-800">
+                        <div className="text-3xl font-extrabold text-cyan-600 dark:text-cyan-400 font-mono">
+                          {profile.atsScore}
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                        {profile.atsScore >= 80 ? 'Exceptional CV Quality' : profile.atsScore >= 60 ? 'Good Complete Base' : 'Needs Optimization'}
+                      </span>
+                    </div>
+
+                    {/* Strengths & Missing elements */}
+                    <div className="lg:col-span-2 space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Strengths */}
+                        <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 space-y-2">
+                          <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Strengths</span>
+                          {profile.atsAnalysis?.strengths && profile.atsAnalysis.strengths.length > 0 ? (
+                            <ul className="text-xs text-zinc-650 dark:text-zinc-400 space-y-1.5 list-disc pl-4 font-medium">
+                              {profile.atsAnalysis.strengths.map((str, idx) => (
+                                <li key={idx}>{str}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-zinc-500">None detected yet.</p>
+                          )}
+                        </div>
+
+                        {/* Missing Elements */}
+                        <div className="p-4 bg-rose-500/5 rounded-xl border border-rose-500/10 space-y-2">
+                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Missing Elements</span>
+                          {profile.atsAnalysis?.missingElements && profile.atsAnalysis.missingElements.length > 0 ? (
+                            <ul className="text-xs text-zinc-650 dark:text-zinc-400 space-y-1.5 list-disc pl-4 font-medium">
+                              {profile.atsAnalysis.missingElements.map((mis, idx) => (
+                                <li key={idx}>{mis}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-emerald-500 font-semibold">Perfect completeness! No missing components.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Suggestions */}
+                      {profile.atsAnalysis?.suggestions && profile.atsAnalysis.suggestions.length > 0 && (
+                        <div className="p-4 bg-cyan-500/5 rounded-xl border border-cyan-500/10 space-y-2">
+                          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-wider block">Prioritized Improvement Suggestions</span>
+                          <ul className="text-xs text-zinc-650 dark:text-zinc-400 space-y-1.5 list-decimal pl-4 font-medium">
+                            {profile.atsAnalysis.suggestions.map((sug, idx) => (
+                              <li key={idx}>{sug}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 space-y-2">
+                    <p className="text-xs text-zinc-500">ATS Resume Score has not been calculated for this profile yet.</p>
+                    <p className="text-[10px] text-zinc-500">Click the button above to run the analysis engine!</p>
+                  </div>
+                )}
               </div>
 
               {/* PDF Preview panel */}

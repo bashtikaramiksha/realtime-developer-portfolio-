@@ -16,7 +16,7 @@ export async function GET() {
 
     // 1. Fetch profile
     const [profile] = await sql`
-      SELECT bio, headline, location, contact_number as "contactNumber", resume_url as "resumeUrl", profile_image as "profileImage", portfolio_slug as "portfolioSlug"
+      SELECT bio, headline, location, contact_number as "contactNumber", resume_url as "resumeUrl", profile_image as "profileImage", portfolio_slug as "portfolioSlug", ats_score as "atsScore", ats_analysis as "atsAnalysis"
       FROM profiles
       WHERE user_id = ${userId}
       LIMIT 1
@@ -49,6 +49,8 @@ export async function GET() {
         resumeUrl: '',
         profileImage: '',
         portfolioSlug: '',
+        atsScore: null,
+        atsAnalysis: null,
       },
       skills: skills || [],
       socialLinks: socialLinks || [],

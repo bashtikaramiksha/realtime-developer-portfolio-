@@ -51,6 +51,8 @@ export async function GET() {
         resume_url TEXT,
         profile_image TEXT,
         portfolio_slug VARCHAR(255) UNIQUE,
+        ats_score INTEGER DEFAULT NULL,
+        ats_analysis JSONB DEFAULT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
       );
@@ -61,6 +63,14 @@ export async function GET() {
       await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS contact_number VARCHAR(100)`;
     } catch (e) {
       console.log('contact_number alter column might already exist:', e);
+    }
+
+    // Ensure ats_score and ats_analysis columns exist for ATS Resume Score functionality
+    try {
+      await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ats_score INTEGER DEFAULT NULL`;
+      await sql`ALTER TABLE profiles ADD COLUMN IF NOT EXISTS ats_analysis JSONB DEFAULT NULL`;
+    } catch (e) {
+      console.log('ATS alter columns might already exist:', e);
     }
 
 

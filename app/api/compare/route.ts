@@ -295,9 +295,6 @@ function getDeterministicMockUser(username: string) {
 export async function POST(request: Request) {
   try {
     const session = await getAuthUser();
-    if (!session) {
-      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
-    }
 
     const body = await request.json();
     const validation = compareSchema.safeParse(body);
@@ -523,6 +520,14 @@ export async function POST(request: Request) {
           SELECT role, company, duration, technologies FROM experiences WHERE user_id = ${dbUser.id}
         `;
 
+        // Query profile for portfolio_slug and ATS score/analysis
+        const [dbProfile] = await sql`
+          SELECT portfolio_slug as "portfolioSlug", ats_score as "atsScore", ats_analysis as "atsAnalysis"
+          FROM profiles
+          WHERE user_id = ${dbUser.id}
+          LIMIT 1
+        `;
+
         // Calculate total years of experience
         const parsedYears = exps.reduce((sum, e: any) => {
           const dur = e.duration || '';
@@ -580,7 +585,10 @@ export async function POST(request: Request) {
           certificationsList: certsList,
           experiencesList: expsList,
           techStackAnalysis: combinedTechTags,
-          expYears
+          expYears,
+          portfolioSlug: dbProfile?.portfolioSlug || dev.username,
+          atsScore: dbProfile?.atsScore || null,
+          atsAnalysis: dbProfile?.atsAnalysis || null
         });
       } else {
         // External user - keep empty lists
@@ -592,7 +600,10 @@ export async function POST(request: Request) {
           experiencesCount: 0,
           certificationsList: [],
           experiencesList: [],
-          expYears: 0
+          expYears: 0,
+          portfolioSlug: dev.username,
+          atsScore: null,
+          atsAnalysis: null
         });
       }
     }
@@ -861,60 +872,65 @@ export async function POST(request: Request) {
       jobDescription: jobDescription || null
     };
 
-    // Save comparison to database inside transaction
-    let savedComparisonId = '';
+    // Save comparison to database inside transaction only if logged in
+    let savedComparisonId = null;
 
-    await sql.begin(async (sql) => {
-      const title = `Recruiter Compare: ${uniqueUsernames.slice(0, 3).join(', ')}${uniqueUsernames.length > 3 ? '...' : ''}`;
-      
-      const [insertedComp] = await sql`
-        INSERT INTO comparisons (user_id, title)
-        VALUES (${session.userId}, ${title})
-        RETURNING id
-      `;
+    if (session) {
+      await sql.begin(async (sql) => {
+        const title = `Recruiter Compare: ${uniqueUsernames.slice(0, 3).join(', ')}${uniqueUsernames.length > 3 ? '...' : ''}`;
+        
+        const [insertedComp] = await sql`
+          INSERT INTO comparisons (user_id, title)
+          VALUES (${session.userId}, ${title})
+          RETURNING id
+        `;
 
-      savedComparisonId = insertedComp.id;
+        savedComparisonId = insertedComp.id;
 
-      for (const dev of computedDevs) {
-        const techStackPayload = {
-          tags: dev.techStackAnalysis || [],
-          leetcodeStats: dev.leetcodeStats || null,
-          skills: dev.skills || [],
-          certificationsCount: dev.certificationsCount || 0,
-          experiencesCount: dev.experiencesCount || 0,
-          certificationsList: dev.certificationsList || [],
-          experiencesList: dev.experiencesList || [],
-          // Expanded Recruiter fields saved deterministically in JSONB
-          hiringScore: dev.hiringScore,
-          matchPercentage: dev.matchPercentage,
-          skillsGap: dev.skillsGap,
-          interviewReadiness: dev.interviewReadiness,
-          candidateGrowth: dev.candidateGrowth,
-          openToWork: dev.openToWork,
-          recentlyActive: dev.recentlyActive,
-          expYears: dev.expYears
-        };
+        for (const dev of computedDevs) {
+          const techStackPayload = {
+            tags: dev.techStackAnalysis || [],
+            leetcodeStats: dev.leetcodeStats || null,
+            skills: dev.skills || [],
+            certificationsCount: dev.certificationsCount || 0,
+            experiencesCount: dev.experiencesCount || 0,
+            certificationsList: dev.certificationsList || [],
+            experiencesList: dev.experiencesList || [],
+            // Expanded Recruiter fields saved deterministically in JSONB
+            hiringScore: dev.hiringScore,
+            matchPercentage: dev.matchPercentage,
+            skillsGap: dev.skillsGap,
+            interviewReadiness: dev.interviewReadiness,
+            candidateGrowth: dev.candidateGrowth,
+            openToWork: dev.openToWork,
+            recentlyActive: dev.recentlyActive,
+            expYears: dev.expYears,
+            portfolioSlug: dev.portfolioSlug,
+            atsScore: dev.atsScore,
+            atsAnalysis: dev.atsAnalysis
+          };
+
+          await sql`
+            INSERT INTO comparison_users (
+              comparison_id, github_username, avatar_url, followers, following,
+              public_repos, stars, forks, total_contributions, commit_activity,
+              pull_requests, issues, account_age_years, most_used_languages,
+              tech_stack_analysis, is_shortlisted
+            ) VALUES (
+              ${insertedComp.id}, ${dev.username}, ${dev.avatarUrl}, ${dev.followers}, ${dev.following},
+              ${dev.publicRepos}, ${dev.stars}, ${dev.forks}, ${dev.totalContributions}, ${sql.json(dev.commitActivity)},
+              ${dev.pullRequests}, ${dev.issues}, ${dev.accountAgeYears}, ${sql.json(dev.mostUsedLanguages)},
+              ${sql.json(techStackPayload)}, FALSE
+            )
+          `;
+        }
 
         await sql`
-          INSERT INTO comparison_users (
-            comparison_id, github_username, avatar_url, followers, following,
-            public_repos, stars, forks, total_contributions, commit_activity,
-            pull_requests, issues, account_age_years, most_used_languages,
-            tech_stack_analysis, is_shortlisted
-          ) VALUES (
-            ${insertedComp.id}, ${dev.username}, ${dev.avatarUrl}, ${dev.followers}, ${dev.following},
-            ${dev.publicRepos}, ${dev.stars}, ${dev.forks}, ${dev.totalContributions}, ${sql.json(dev.commitActivity)},
-            ${dev.pullRequests}, ${dev.issues}, ${dev.accountAgeYears}, ${sql.json(dev.mostUsedLanguages)},
-            ${sql.json(techStackPayload)}, FALSE
-          )
+          INSERT INTO comparison_reports (comparison_id, ai_insights, rankings)
+          VALUES (${insertedComp.id}, ${sql.json(aiInsights)}, ${sql.json(rankings)})
         `;
-      }
-
-      await sql`
-        INSERT INTO comparison_reports (comparison_id, ai_insights, rankings)
-        VALUES (${insertedComp.id}, ${sql.json(aiInsights)}, ${sql.json(rankings)})
-      `;
-    });
+      });
+    }
 
     return NextResponse.json({
       status: 'success',

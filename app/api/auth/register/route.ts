@@ -71,7 +71,8 @@ export async function POST(request: Request) {
     console.error('Registration API Error:', error);
     return NextResponse.json({
       status: 'error',
-      message: 'An internal server error occurred',
+      message: error.message || 'An internal server error occurred',
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     }, { status: 500 });
   }
 }

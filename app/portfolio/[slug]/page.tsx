@@ -83,13 +83,13 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
   // 1. Fetch user profile
   const [profile] = (await sql`
     SELECT 
-      p.id, p.user_id, p.bio, p.headline, p.location, p.resume_url, p.profile_image, p.portfolio_slug, p.contact_number,
+      p.id, p.user_id, p.bio, p.headline, p.location, p.resume_url, p.profile_image, p.portfolio_slug, p.contact_number, p.ats_score, p.ats_analysis,
       u.name, u.email, u.github_username
     FROM profiles p
     INNER JOIN users u ON p.user_id = u.id
     WHERE p.portfolio_slug = ${slug}
     LIMIT 1
-  `) as ProfileRecord[];
+  `) as (ProfileRecord & { ats_score?: number | null; ats_analysis?: any })[];
 
   if (!profile) {
     notFound();
@@ -126,6 +126,45 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
     WHERE user_id = ${profile.user_id}
     ORDER BY created_at DESC
   `) as ExperienceRecord[];
+
+  // Resolve ATS Score on-the-fly if not already calculated
+  let atsScore = profile.ats_score;
+  let atsAnalysis = profile.ats_analysis;
+
+  if (atsScore === null || atsScore === undefined) {
+    let tempScore = 40; // Base score
+    const strengthsList: string[] = [];
+
+    if (profile.headline && profile.headline.trim()) { tempScore += 5; strengthsList.push('Professional headline is defined.'); }
+    if (profile.location && profile.location.trim()) { tempScore += 5; strengthsList.push('Location is specified.'); }
+    if (profile.contact_number && profile.contact_number.trim()) { tempScore += 5; strengthsList.push('Contact information is provided.'); }
+
+    if (skills.length >= 7) { tempScore += 15; strengthsList.push('Robust skills inventory populated.'); }
+    else if (skills.length > 0) { tempScore += 10; strengthsList.push('Technical skills cataloged.'); }
+
+    if (experiences.length >= 2) { tempScore += 20; strengthsList.push('Comprehensive work history included.'); }
+    else if (experiences.length === 1) { tempScore += 10; strengthsList.push('Professional timeline initialized.'); }
+
+    const bioText = (profile.bio || '').toLowerCase();
+    const educationKeywords = ['degree', 'university', 'college', 'bachelor', 'master', 'phd', 'b.tech', 'b.s', 'm.s', 'computer science', 'engineering', 'education', 'diploma'];
+    if (educationKeywords.some(kw => bioText.includes(kw))) { tempScore += 10; strengthsList.push('Educational qualifications declared.'); }
+
+    if (certifications.length > 0) { tempScore += Math.min(10, certifications.length * 2); strengthsList.push('Industry certifications verified.'); }
+
+    if (profile.github_username && profile.github_username.trim()) { tempScore += 5; strengthsList.push('GitHub developer account linked.'); }
+
+    const hasLinkedIn = socialLinks.some((l: any) => (l.platform || '').toLowerCase() === 'linkedin' || (l.url || '').toLowerCase().includes('linkedin.com'));
+    if (hasLinkedIn) { tempScore += 5; strengthsList.push('LinkedIn network profile connected.'); }
+
+    if (profile.resume_url && profile.resume_url.trim()) { tempScore += 15; strengthsList.push('Printable resume document uploaded.'); }
+
+    atsScore = Math.min(100, Math.round(tempScore));
+    atsAnalysis = {
+      strengths: strengthsList.length > 0 ? strengthsList : ['Profile successfully set up.'],
+      missingElements: [],
+      suggestions: []
+    };
+  }
 
   // Social icon mapper
   const getSocialIcon = (platform: string) => {
@@ -415,7 +454,9 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
                     <div key={sk.skill_name} className="space-y-2">
                       <div className="flex justify-between text-xs font-bold text-zinc-700 dark:text-zinc-300">
                         <span>{sk.skill_name}</span>
-                        <span className="text-cyan-600 dark:text-cyan-400">{sk.skill_level}%</span>
+                        <span className="text-cyan-600 dark:text-cyan-400">
+                          {sk.skill_level <= 50 ? 'Good' : sk.skill_level <= 80 ? 'Intermediate' : 'Best'} ({sk.skill_level}%)
+                        </span>
                       </div>
                       <div className="w-full bg-zinc-100 dark:bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-900">
                         <div
@@ -428,6 +469,39 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
                 </div>
               )}
             </section>
+
+            {/* ATS Resume Score Card */}
+            {atsScore !== undefined && atsScore !== null && (
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/30 p-6 backdrop-blur-sm space-y-4 shadow-sm dark:shadow-none">
+                <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                  <FileText className="h-4 w-4 text-cyan-500" />
+                  ATS Resume Score
+                </h2>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Completeness Score</span>
+                  <span className="text-xl font-extrabold text-cyan-600 dark:text-cyan-400 font-mono">{atsScore}/100</span>
+                </div>
+                <div className="w-full bg-zinc-150 dark:bg-zinc-950 h-2.5 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-900">
+                  <div
+                    className="bg-gradient-to-r from-cyan-500 to-emerald-500 h-full rounded-full"
+                    style={{ width: `${atsScore}%` }}
+                  />
+                </div>
+                {atsAnalysis && atsAnalysis.strengths && atsAnalysis.strengths.length > 0 && (
+                  <div className="space-y-1.5 pt-2">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Key Strengths</span>
+                    <ul className="text-[10px] text-zinc-650 dark:text-zinc-400 space-y-1 font-semibold">
+                      {atsAnalysis.strengths.slice(0, 3).map((strength: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-1">
+                          <span className="text-emerald-500 font-bold">✓</span>
+                          <span>{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Professional Summary */}
             <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/40 p-6 backdrop-blur-sm text-center shadow-sm dark:shadow-none">

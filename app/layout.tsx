@@ -32,11 +32,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased scroll-smooth`}
       suppressHydrationWarning
     >
-      <head />
-      <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-400 transition-colors duration-300">
-        <Script
-          id="theme-initializer"
-          strategy="beforeInteractive"
+      <head>
+        <script
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -51,6 +48,8 @@ export default function RootLayout({
             `
           }}
         />
+      </head>
+      <body className="min-h-full flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-400 transition-colors duration-300">
         <AuthProvider>
           <Navbar />
           <div className="flex-1 flex flex-col">

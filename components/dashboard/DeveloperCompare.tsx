@@ -6,7 +6,7 @@ import {
   GitPullRequest, AlertCircle, FileText, CheckCircle, Trophy, 
   ChevronRight, Sparkles, Copy, Printer, Check, History, Loader,
   Search, X, Briefcase, GraduationCap, Code2, Plus, Eye,
-  ArrowRight, Activity, FileDown, ShieldAlert
+  ArrowRight, Activity, FileDown, ShieldAlert, ExternalLink
 } from 'lucide-react';
 import { useAuth } from '@/lib/context/AuthContext';
 
@@ -72,6 +72,14 @@ interface Developer {
   openToWork?: boolean;
   recentlyActive?: boolean;
   expYears?: number;
+  atsScore?: number;
+  atsAnalysis?: {
+    strengths: string[];
+    missingElements: string[];
+    suggestions: string[];
+    breakdown?: Record<string, number>;
+  };
+  portfolioSlug?: string;
 }
 
 interface AIInsight {
@@ -125,7 +133,7 @@ Requirements:
 };
 
 export default function DeveloperCompare() {
-  const { showToast } = useAuth();
+  const { showToast, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [comparing, setComparing] = useState(false);
@@ -137,6 +145,11 @@ export default function DeveloperCompare() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedExperienceLevels, setSelectedExperienceLevels] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // Advanced Recruiter Directory Filters
+  const [filterOpenToWork, setFilterOpenToWork] = useState(false);
+  const [minAtsScore, setMinAtsScore] = useState(0);
+  const [minHiringScore, setMinHiringScore] = useState(0);
 
   const [developerList, setDeveloperList] = useState<string[]>([]);
   const [jobDescription, setJobDescription] = useState('');
@@ -219,6 +232,15 @@ export default function DeveloperCompare() {
         ? tsa.expYears 
         : (experiencesCount === 0 ? 0 : Math.max(0.5, parseFloat((experiencesCount * 1.5).toFixed(1)))));
 
+    const atsScore = dev.atsScore !== undefined ? dev.atsScore : (isObject && tsa.atsScore !== undefined ? tsa.atsScore : 70);
+    const atsAnalysis = dev.atsAnalysis || (isObject && tsa.atsAnalysis) || {
+      strengths: ['Open source profile synced.'],
+      missingElements: [],
+      suggestions: []
+    };
+
+    const portfolioSlug = dev.portfolioSlug || (isObject && tsa.portfolioSlug) || dev.username;
+
     return {
       tags: isObject ? (tsa.tags || []) : (Array.isArray(tsa) ? tsa : []),
       leetcodeStats: isObject ? tsa.leetcodeStats : (dev.leetcodeStats || null),
@@ -235,7 +257,10 @@ export default function DeveloperCompare() {
       candidateGrowth: { commitGrowth, projectGrowth, certsGrowth },
       openToWork,
       recentlyActive,
-      expYears
+      expYears,
+      atsScore,
+      atsAnalysis,
+      portfolioSlug
     };
   };
 
@@ -306,6 +331,16 @@ export default function DeveloperCompare() {
 
   const handleRemoveDeveloper = (index: number) => {
     setDeveloperList(prev => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleToggleSelectDeveloper = (username: string) => {
+    if (developerList.some(item => item.toLowerCase() === username.toLowerCase())) {
+      setDeveloperList(prev => prev.filter(item => item.toLowerCase() !== username.toLowerCase()));
+      showToast(`Removed @${username} from comparison queue`, 'info');
+    } else {
+      setDeveloperList(prev => [...prev, username]);
+      showToast(`Added @${username} to comparison queue`, 'info');
+    }
   };
 
   const handleRunComparison = async () => {
@@ -514,48 +549,48 @@ export default function DeveloperCompare() {
                 Paste a job description, search platform users, and calculate deep AI-powered matches and recruiter readiness ratings.
               </p>
             </div>
-          </div>
+                    {user && (
+            <div className="relative">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer"
+              >
+                <History className="h-4 w-4" />
+                Saved Dashboards ({history.length})
+              </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 px-4 py-2.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer"
-            >
-              <History className="h-4 w-4" />
-              Saved Dashboards ({history.length})
-            </button>
-
-            {showHistory && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-2xl z-50 animate-slide-in">
-                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200 dark:border-zinc-800/80 mb-2">Previous Comparisons</h4>
-                {historyLoading ? (
-                  <div className="flex justify-center p-4">
-                    <Loader className="h-5 w-5 animate-spin text-cyan-500" />
-                  </div>
-                ) : history.length === 0 ? (
-                  <p className="text-xs text-zinc-500 text-center py-4">No saved comparisons found.</p>
-                ) : (
-                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-                    {history.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => handleLoadHistory(item)}
-                        className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all group cursor-pointer"
-                      >
-                        <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-cyan-500 dark:group-hover:text-cyan-400">
-                          {item.title}
-                        </div>
-                        <span className="text-[9px] text-zinc-500 block mt-0.5">
-                          {new Date(item.createdAt).toLocaleDateString()} &bull; {item.developers.length} Candidates
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              {showHistory && (
+                <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-2xl z-50 animate-slide-in">
+                  <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-3 py-2 border-b border-zinc-200 dark:border-zinc-800/80 mb-2">Previous Comparisons</h4>
+                  {historyLoading ? (
+                    <div className="flex justify-center p-4">
+                      <Loader className="h-5 w-5 animate-spin text-cyan-500" />
+                    </div>
+                  ) : history.length === 0 ? (
+                    <p className="text-xs text-zinc-500 text-center py-4">No saved comparisons found.</p>
+                  ) : (
+                    <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+                      {history.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleLoadHistory(item)}
+                          className="w-full text-left p-2.5 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800 transition-all group cursor-pointer"
+                        >
+                          <div className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-cyan-500 dark:group-hover:text-cyan-400">
+                            {item.title}
+                          </div>
+                          <span className="text-[9px] text-zinc-550 block mt-0.5">
+                            {new Date(item.createdAt).toLocaleDateString()} &bull; {item.developers.length} Candidates
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}  </div>
         </div>
 
         {/* Setup Flow */}
@@ -837,6 +872,289 @@ export default function DeveloperCompare() {
         </div>
       </div>
 
+      {/* 1.5 Public Developer Directory Section */}
+      {!comparisonResults && (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4">
+            <div>
+              <h3 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <Code2 className="h-5 w-5 text-cyan-500" />
+                Public Developer Directory
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5 font-medium">
+                Browse published portfolios, apply search filters, and select developers to build your comparison queue.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Filters Sidebar */}
+            <div className="lg:col-span-1 space-y-6 bg-white/70 dark:bg-zinc-900/30 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 backdrop-blur-sm h-fit">
+              <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider pb-2 border-b border-zinc-200 dark:border-zinc-800/80">
+                Recruiter Filters
+              </h4>
+
+              {/* Text Search */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider">Search</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search name, headline, skills..."
+                    className="w-full pl-9 pr-4 py-2.5 text-xs bg-zinc-50 dark:bg-zinc-955 border border-zinc-200 dark:border-zinc-850 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-zinc-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Specialty */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider">Specialty</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full p-2.5 text-xs bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-850 rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 text-zinc-900 dark:text-white cursor-pointer font-bold"
+                >
+                  <option value="All">All Specialties</option>
+                  <option value="Frontend">Frontend</option>
+                  <option value="Backend">Backend</option>
+                  <option value="Full Stack">Full Stack</option>
+                  <option value="AI/ML">AI/ML</option>
+                  <option value="DevOps">DevOps</option>
+                </select>
+              </div>
+
+              {/* Open to Work Status */}
+              <div className="space-y-2 pt-2">
+                <label className="flex items-center gap-2.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filterOpenToWork}
+                    onChange={(e) => setFilterOpenToWork(e.target.checked)}
+                    className="h-4.5 w-4.5 rounded border-zinc-300 dark:border-zinc-800 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                  />
+                  Open to Work Only
+                </label>
+              </div>
+
+              {/* Min ATS Score Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider">
+                  <span>Min ATS Score</span>
+                  <span className="text-emerald-500 font-extrabold text-xs">{minAtsScore}+</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={minAtsScore}
+                  onChange={(e) => setMinAtsScore(parseInt(e.target.value))}
+                  className="w-full accent-emerald-500 cursor-pointer bg-zinc-200 dark:bg-zinc-800 h-1 rounded-lg"
+                />
+              </div>
+
+              {/* Min Hiring Score Slider */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-extrabold uppercase text-zinc-500 tracking-wider">
+                  <span>Min Hiring Score</span>
+                  <span className="text-cyan-500 font-extrabold text-xs">{minHiringScore}+</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={minHiringScore}
+                  onChange={(e) => setMinHiringScore(parseInt(e.target.value))}
+                  className="w-full accent-cyan-500 cursor-pointer bg-zinc-200 dark:bg-zinc-800 h-1 rounded-lg"
+                />
+              </div>
+
+              {/* Reset Filters button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory('All');
+                  setSelectedExperienceLevels([]);
+                  setFilterOpenToWork(false);
+                  setMinAtsScore(0);
+                  setMinHiringScore(0);
+                }}
+                className="w-full py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-550 hover:text-zinc-700 dark:text-zinc-400 rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                Clear Filters
+              </button>
+            </div>
+
+            {/* Candidates Cards Grid */}
+            <div className="lg:col-span-3">
+              {loadingUsers ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                  <Loader className="h-8 w-8 animate-spin text-cyan-500" />
+                  <p className="text-xs text-zinc-500 font-medium">Loading published developer profiles...</p>
+                </div>
+              ) : (() => {
+                const filteredUsers = registeredUsers.filter(user => {
+                  const matchesSearch = 
+                    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    user.githubUsername.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    user.headline.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    user.skills.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+                  const matchesCategory = 
+                    selectedCategory === 'All' || 
+                    user.categories.some((cat: string) => cat.toLowerCase() === selectedCategory.toLowerCase());
+                  const matchesExperience = 
+                    selectedExperienceLevels.length === 0 ||
+                    selectedExperienceLevels.includes(getExperienceCategory(user.expYears || 0));
+                  const matchesOpenToWork = !filterOpenToWork || user.openToWork;
+                  const matchesAts = user.atsScore >= minAtsScore;
+                  const matchesHiring = user.hiringScore >= minHiringScore;
+                  
+                  return matchesSearch && matchesCategory && matchesExperience && matchesOpenToWork && matchesAts && matchesHiring;
+                });
+
+                if (filteredUsers.length === 0) {
+                  return (
+                    <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/10 p-12 text-center text-zinc-500 space-y-2">
+                      <p className="text-sm font-bold text-zinc-800 dark:text-zinc-300">No Developers Found</p>
+                      <p className="text-xs font-medium">Try broadening your search queries or resetting your filters.</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredUsers.map((user) => {
+                      const isAdded = developerList.some(item => item.toLowerCase() === user.githubUsername.toLowerCase());
+                      return (
+                        <div 
+                          key={user.id} 
+                          className="group relative rounded-2xl border border-zinc-200 dark:border-zinc-850 hover:border-cyan-500/30 bg-white/50 dark:bg-zinc-900/20 hover:bg-cyan-955/[0.01] p-5 transition-all duration-300 hover:shadow-xl hover:translate-y-[-3px] flex flex-col justify-between min-h-[340px]"
+                        >
+                          {/* Top: hiring status and queue selector */}
+                          <div className="flex justify-between items-start gap-2">
+                            {user.openToWork ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-extrabold shadow-sm">
+                                <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Open to Work
+                              </span>
+                            ) : (
+                              <span className="text-[9px] bg-zinc-100 dark:bg-zinc-800/80 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded-full font-bold">
+                                Passive
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelectDeveloper(user.githubUsername)}
+                              className={`flex items-center gap-1 rounded-xl px-3 py-1.5 text-[10px] font-bold transition-all active:scale-[0.97] cursor-pointer ${
+                                isAdded
+                                  ? 'bg-cyan-600/10 border border-cyan-500/20 text-cyan-500 hover:bg-cyan-600/20'
+                                  : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-md shadow-cyan-600/10'
+                              }`}
+                            >
+                              {isAdded ? (
+                                <>
+                                  <Check className="h-3.5 w-3.5" />
+                                  Selected
+                                </>
+                              ) : (
+                                <>
+                                  <Plus className="h-3.5 w-3.5" />
+                                  Compare
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Middle: avatar, headline, bio */}
+                          <div className="flex items-center gap-3.5 mt-4">
+                            <img
+                              src={user.avatarUrl}
+                              alt={user.name}
+                              className="h-11 w-11 rounded-full object-cover border border-zinc-200 dark:border-zinc-800 shadow-md shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/bottts/svg?seed=${user.githubUsername}`;
+                              }}
+                            />
+                            <div className="min-w-0">
+                              <h4 className="font-extrabold text-xs text-zinc-900 dark:text-white truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                                {user.name}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[8px] bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded font-extrabold shrink-0">
+                                  {user.expYears !== undefined ? (user.expYears > 0 ? `${user.expYears}y Exp` : 'Fresher') : 'Fresher'}
+                                </span>
+                                <span className="text-[9px] text-zinc-550 font-bold shrink-0">
+                                  @{user.githubUsername}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-3.5 space-y-1">
+                            <p className="text-[11px] font-bold text-zinc-800 dark:text-zinc-200 truncate leading-snug">
+                              {user.headline}
+                            </p>
+                            <p className="text-[10px] text-zinc-500 dark:text-zinc-455 line-clamp-2 leading-relaxed font-medium">
+                              {user.bio}
+                            </p>
+                          </div>
+
+                          {/* Skills badges */}
+                          <div className="mt-4 flex flex-wrap gap-1 min-h-[38px] content-start">
+                            {user.skills?.slice(0, 3).map((skill: string) => (
+                              <span
+                                key={skill}
+                                className="text-[8px] bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200/50 dark:border-zinc-800 px-2 py-0.5 rounded text-zinc-650 dark:text-zinc-400 font-bold"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                            {user.skills?.length > 3 && (
+                              <span className="text-[8px] bg-zinc-50 dark:bg-zinc-950 text-zinc-400 px-1.5 py-0.5 rounded font-bold">
+                                +{user.skills.length - 3} more
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Hiring Score and ATS Score stats row */}
+                          <div className="grid grid-cols-2 gap-2 mt-4 pt-3.5 border-t border-zinc-200/60 dark:border-zinc-850">
+                            <div className="bg-zinc-100/50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-850 p-2 rounded-xl text-center shadow-inner hover:scale-[1.02] transition-transform">
+                              <span className="text-[8px] text-zinc-550 dark:text-zinc-400 font-bold uppercase tracking-wider block">Hiring Score</span>
+                              <span className="text-base font-extrabold text-cyan-600 dark:text-cyan-400 block mt-0.5">{user.hiringScore}</span>
+                            </div>
+                            <div className="bg-zinc-100/50 dark:bg-zinc-950/40 border border-zinc-200/50 dark:border-zinc-850 p-2 rounded-xl text-center shadow-inner hover:scale-[1.02] transition-transform">
+                              <span className="text-[8px] text-zinc-550 dark:text-zinc-400 font-bold uppercase tracking-wider block">ATS Score</span>
+                              <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 block mt-0.5">{user.atsScore}</span>
+                            </div>
+                          </div>
+
+                          {/* Footer action View Portfolio */}
+                          <div className="mt-4 pt-2 flex">
+                            <a
+                              href={`/portfolio/${user.portfolioSlug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full flex justify-center items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 px-3 py-2 text-[10px] font-bold text-zinc-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors group cursor-pointer shadow-sm"
+                            >
+                              View Portfolio
+                              <ExternalLink className="h-3 w-3 text-zinc-450 group-hover:text-cyan-500 transition-colors" />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 2. Results Dashboard Panel */}
       {comparisonResults && summaryMetrics && (
         <div className="space-y-8">
@@ -1073,23 +1391,29 @@ export default function DeveloperCompare() {
                       </div>
 
                       {/* Database details grid */}
-                      <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-zinc-150 dark:border-zinc-800/80 text-center">
+                      <div className="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-zinc-150 dark:border-zinc-800/80 text-center">
                         <div>
                           <span className="text-[8px] text-zinc-500 block font-bold uppercase tracking-wider">LeetCode</span>
-                          <span className="text-[10px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block">
+                          <span className="text-[9px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block truncate">
                             {stats.leetcodeStats ? `${stats.leetcodeStats.totalSolved} solved` : '—'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[8px] text-zinc-500 block font-bold uppercase tracking-wider">Certifications</span>
-                          <span className="text-[10px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block">
+                          <span className="text-[8px] text-zinc-500 block font-bold uppercase tracking-wider">Certs</span>
+                          <span className="text-[9px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block truncate">
                             {stats.certificationsCount > 0 ? `${stats.certificationsCount} certs` : '—'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-[8px] text-zinc-500 block font-bold uppercase tracking-wider">Experience</span>
-                          <span className="text-[10px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block">
+                          <span className="text-[8px] text-zinc-500 block font-bold uppercase tracking-wider">Exp</span>
+                          <span className="text-[9px] text-zinc-800 dark:text-zinc-200 font-black mt-0.5 block truncate">
                             {stats.experiencesCount > 0 ? `${stats.experiencesCount} roles` : '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[8px] text-cyan-600 dark:text-cyan-400 block font-bold uppercase tracking-wider">ATS Score</span>
+                          <span className="text-[9px] text-cyan-600 dark:text-cyan-400 font-black mt-0.5 block truncate">
+                            {stats.atsScore ? `${stats.atsScore}/100` : '—'}
                           </span>
                         </div>
                       </div>
@@ -1104,7 +1428,7 @@ export default function DeveloperCompare() {
                           <Eye className="h-3 w-3 shrink-0" /> Dossier
                         </button>
                         <a
-                          href={`/portfolio/${dev.username}`}
+                          href={`/portfolio/${stats.portfolioSlug || dev.username}`}
                           target="_blank"
                           rel="noreferrer"
                           className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white py-1.5 rounded-lg text-[10px] font-extrabold shadow-sm hover:shadow-md transition-all cursor-pointer text-center"
@@ -1334,7 +1658,7 @@ export default function DeveloperCompare() {
                             <Eye className="h-4 w-4" />
                           </button>
                           <a
-                            href={`/portfolio/${dev.username}`}
+                            href={`/portfolio/${stats.portfolioSlug || dev.username}`}
                             target="_blank"
                             rel="noreferrer"
                             className="bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white p-2 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center shadow-md hover:shadow-lg"
@@ -1672,6 +1996,7 @@ export default function DeveloperCompare() {
                     <th className="py-4 px-4">Developer</th>
                     <th className="py-4 px-4 text-center">Hiring Score</th>
                     <th className="py-4 px-4 text-center">JD Match %</th>
+                    <th className="py-4 px-4 text-center">ATS Score</th>
                     <th className="py-4 px-4 text-center">Stars</th>
                     <th className="py-4 px-4 text-center">Forks</th>
                     <th className="py-4 px-4 text-center">Followers</th>
@@ -1708,7 +2033,7 @@ export default function DeveloperCompare() {
                               <span className="text-[9px] text-zinc-550">@{dev.username}</span>
                               <span className="text-zinc-300 dark:text-zinc-700">&bull;</span>
                               <a 
-                                href={`/portfolio/${dev.username}`}
+                                href={`/portfolio/${stats.portfolioSlug || dev.username}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-[9px] text-cyan-600 dark:text-cyan-400 hover:underline font-bold"
@@ -1723,6 +2048,9 @@ export default function DeveloperCompare() {
                         </td>
                         <td className="py-4 px-4 text-center text-cyan-600 dark:text-cyan-400 font-extrabold text-sm">
                           {stats.matchPercentage}%
+                        </td>
+                        <td className="py-4 px-4 text-center text-emerald-600 dark:text-emerald-400 font-extrabold text-sm">
+                          {stats.atsScore ? `${stats.atsScore}/100` : '—'}
                         </td>
                         <td className={`py-4 px-4 text-center font-bold ${
                           dev.username === getPeakDeveloper('stars')?.username ? 'text-yellow-500' : 'text-zinc-650 dark:text-zinc-300'
@@ -2047,17 +2375,24 @@ export default function DeveloperCompare() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex items-center gap-4 shrink-0 flex-wrap md:flex-nowrap justify-end">
                   <div className="text-center md:text-right">
                     <span className="text-[9px] text-zinc-500 uppercase font-extrabold tracking-wider block">Hiring score</span>
                     <span className="text-3xl font-black text-cyan-600 dark:text-cyan-400">{stats.hiringScore} <span className="text-xs text-zinc-500 font-bold">/100</span></span>
                   </div>
                   
-                  <div className="h-12 w-px bg-zinc-200 dark:bg-zinc-800"></div>
+                  <div className="h-12 w-px bg-zinc-200 dark:bg-zinc-800 hidden md:block"></div>
 
                   <div className="text-center md:text-right">
                     <span className="text-[9px] text-zinc-500 uppercase font-extrabold tracking-wider block">JD compatibility</span>
                     <span className="text-3xl font-black text-emerald-500">{stats.matchPercentage}%</span>
+                  </div>
+
+                  <div className="h-12 w-px bg-zinc-200 dark:bg-zinc-800 hidden md:block"></div>
+
+                  <div className="text-center md:text-right">
+                    <span className="text-[9px] text-cyan-500 uppercase font-extrabold tracking-wider block font-black">ATS Score</span>
+                    <span className="text-3xl font-black text-cyan-600 dark:text-cyan-400">{stats.atsScore || '—'}<span className="text-xs text-zinc-500 font-bold">/100</span></span>
                   </div>
                 </div>
               </div>

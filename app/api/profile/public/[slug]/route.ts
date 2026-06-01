@@ -25,6 +25,8 @@ export async function GET(
         p.resume_url as "resumeUrl", 
         p.profile_image as "profileImage", 
         p.portfolio_slug as "portfolioSlug",
+        p.ats_score as "atsScore",
+        p.ats_analysis as "atsAnalysis",
         u.name,
         u.email
       FROM profiles p
