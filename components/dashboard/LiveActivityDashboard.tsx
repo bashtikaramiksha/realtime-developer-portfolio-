@@ -129,7 +129,7 @@ export default function LiveActivityDashboard() {
     };
 
     socket.onerror = (err) => {
-      console.error('WebSocket encountered an error:', err);
+      console.warn('WebSocket connection offline or failed. Falling back to HTTP polling.');
       socket.close();
     };
   };
