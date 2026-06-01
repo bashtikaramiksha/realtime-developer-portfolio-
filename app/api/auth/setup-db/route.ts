@@ -74,6 +74,29 @@ export async function GET() {
     }
 
 
+    // 3c. Create skills table
+    await sql`
+      CREATE TABLE IF NOT EXISTS skills (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        skill_name VARCHAR(255) NOT NULL,
+        skill_level INTEGER NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `;
+
+    // 3d. Create social_links table
+    await sql`
+      CREATE TABLE IF NOT EXISTS social_links (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        platform VARCHAR(255) NOT NULL,
+        url TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `;
+
+
     // 4. Create github_repositories table
     await sql`
       CREATE TABLE IF NOT EXISTS github_repositories (

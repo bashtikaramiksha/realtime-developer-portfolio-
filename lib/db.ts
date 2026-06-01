@@ -4,7 +4,7 @@ import postgres from 'postgres';
 const globalForDb = global as unknown as { conn: ReturnType<typeof postgres> };
 
 export const sql = globalForDb.conn || postgres(process.env.DATABASE_URL!, {
-  ssl: false // Disable SSL since Laragon runs locally
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 if (process.env.NODE_ENV !== 'production') globalForDb.conn = sql;
