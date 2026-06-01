@@ -219,9 +219,15 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
 
           <div className="flex-1 space-y-3">
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
-                {profile.name}
-              </h1>
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-zinc-900 to-zinc-600 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
+                  {profile.name}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full shadow-sm animate-pulse shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping"></span>
+                  Open to Work
+                </span>
+              </div>
               <p className="text-lg font-semibold text-cyan-600 dark:text-cyan-400 mt-1">{profile.headline || 'Software Engineer'}</p>
             </div>
 
@@ -243,14 +249,8 @@ export default async function PublicPortfolioPage({ params }: { params: Promise<
             </div>
           </div>
 
-          {/* Social Platforms links & Open to Work */}
+          {/* Social Platforms links */}
           <div className="flex flex-col items-center md:items-end gap-2.5 shrink-0 self-center md:self-end pb-1">
-            {/* Animated Blue "Open to Work" Indicator */}
-            <span className="inline-flex items-center gap-1.5 text-[9px] font-extrabold tracking-wider uppercase text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 rounded-full shadow-sm animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-ping"></span>
-              Open to Work
-            </span>
-
             {socialLinks.length > 0 && (
               <div className="flex gap-2.5">
                 {socialLinks.map((link) => (
